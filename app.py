@@ -13,13 +13,15 @@ st.title("🎓 Student Performance Lasso Regression")
 @st.cache_data
 def load_data():
     try:
-        # Ensure 'student_data.csv' is in the same folder as this script
-        df = pd.read_csv('student_data.csv')
+        # Change the filename extension to .xlsx
+        df = pd.read_excel('student_data.xlsx', engine='openpyxl')
         return df
     except FileNotFoundError:
-        st.error("❌ Error: 'student_data.csv' not found. Please upload it to your GitHub repo.")
+        st.error("❌ Error: 'student_data.xlsx' not found in the repository.")
         return None
-
+    except Exception as e:
+        st.error(f"❌ An error occurred: {e}")
+        return None
 df = load_data()
 
 if df is not None:
