@@ -13,10 +13,9 @@ from sklearn.metrics import mean_squared_error, r2_score
 st.set_page_config(page_title="Student Performance Predictor", layout="centered")
 
 st.title("📊 Student Performance Prediction using Lasso Regression")
-st.write("Predict final exam scores and identify key influencing factors.")
 
 # -------------------------------
-# Load Dataset
+# Load Data
 # -------------------------------
 @st.cache_data
 def load_data():
@@ -25,6 +24,7 @@ def load_data():
     except:
         data = pd.read_excel("student_data.xlsx")
 
+    # Clean columns
     data.columns = (
         data.columns
         .str.strip()
@@ -36,20 +36,20 @@ def load_data():
 
 data = load_data()
 
-# -------------------------------
-# Show Columns
-# -------------------------------
-st.subheader("📌 Available Columns")
-st.write(data.columns.tolist())
-
-# -------------------------------
-# Dataset Preview
-# -------------------------------
-st.subheader("🔍 Dataset Preview")
+st.write("📌 Columns:", data.columns.tolist())
 st.dataframe(data.head())
 
 # -------------------------------
-# Feature Mapping (UPDATED)
+# FIX TARGET COLUMN (IMPORTANT)
+# -------------------------------
+# Try converting to numeric
+data['final_result'] = pd.to_numeric(data['final_result'], errors='coerce')
+
+# Drop rows where conversion failed
+data = data.dropna(subset=['final_result'])
+
+# -------------------------------
+# Features
 # -------------------------------
 features = [
     'study_hours_per_day',
@@ -62,16 +62,7 @@ features = [
 target = 'final_result'
 
 # -------------------------------
-# Check columns
-# -------------------------------
-missing_cols = [col for col in features + [target] if col not in data.columns]
-
-if missing_cols:
-    st.error(f"❌ Missing columns: {missing_cols}")
-    st.stop()
-
-# -------------------------------
-# Split Data
+# Split
 # -------------------------------
 X = data[features]
 y = data[target]
@@ -88,7 +79,7 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
 # -------------------------------
-# Lasso Model
+# Model
 # -------------------------------
 model = Lasso(alpha=0.5)
 model.fit(X_train_scaled, y_train)
@@ -102,26 +93,26 @@ mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
 
 st.subheader("📈 Model Evaluation")
-st.write(f"**MSE:** {mse:.2f}")
-st.write(f"**R² Score:** {r2:.2f}")
+st.write(f"MSE: {mse:.2f}")
+st.write(f"R² Score: {r2:.2f}")
 
 # -------------------------------
 # Feature Importance
 # -------------------------------
-coefficients = pd.DataFrame({
+coef_df = pd.DataFrame({
     "Feature": features,
     "Coefficient": model.coef_
 })
 
 st.subheader("📊 Feature Importance")
-st.dataframe(coefficients)
+st.dataframe(coef_df)
 
 # -------------------------------
-# Prediction UI
+# Prediction
 # -------------------------------
-st.subheader("🎯 Predict Student Score")
+st.subheader("🎯 Predict Score")
 
-study = st.slider("Study Hours per Day", 0.0, 12.0, 5.0)
+study = st.slider("Study Hours", 0.0, 12.0, 5.0)
 attendance = st.slider("Attendance %", 0.0, 100.0, 75.0)
 gpa = st.slider("Previous GPA", 0.0, 10.0, 6.0)
 midterm = st.slider("Midterm Marks", 0.0, 100.0, 50.0)
@@ -132,4 +123,4 @@ input_scaled = scaler.transform(input_data)
 
 prediction = model.predict(input_scaled)
 
-st.success(f"📌 Predicted Final Result: {prediction[0]:.2f}")
+st.success(f"📌 Predicted Final Score: {prediction[0]:.2f}")
