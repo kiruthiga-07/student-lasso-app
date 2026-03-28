@@ -8,40 +8,75 @@ from sklearn.linear_model import Lasso
 from sklearn.metrics import mean_squared_error, r2_score
 
 # -------------------------------
-# Title
+# Page Setup
 # -------------------------------
+st.set_page_config(page_title="Student Performance Predictor", layout="centered")
+
 st.title("📊 Student Performance Prediction using Lasso Regression")
-
-st.write("This app predicts final exam scores and identifies important factors affecting performance.")
+st.write("Predict final exam scores and identify key influencing factors.")
 
 # -------------------------------
-# Load Dataset
+# Load Dataset (Auto Detect)
 # -------------------------------
 @st.cache_data
 def load_data():
-    data = pd.read_excel("student_data.xlsx")
+    try:
+        data = pd.read_csv("student_data.csv")
+    except:
+        data = pd.read_excel("student_data.xlsx")
+
+    # Clean column names (VERY IMPORTANT)
+    data.columns = (
+        data.columns
+        .str.strip()
+        .str.replace(" ", "_")
+        .str.lower()
+    )
+
     return data
 
 data = load_data()
 
 # -------------------------------
-# Show Data
+# Debug Columns (to avoid errors)
+# -------------------------------
+st.subheader("📌 Available Columns")
+st.write(data.columns.tolist())
+
+# -------------------------------
+# Dataset Preview
 # -------------------------------
 st.subheader("🔍 Dataset Preview")
 st.dataframe(data.head())
 
 # -------------------------------
-# Feature Selection
+# Feature Selection (lowercase)
 # -------------------------------
-features = ['Hours_Studied', 'Attendance', 'Sleep_Hours', 'Previous_Scores', 'Internet_Usage']
-target = 'Final_Score'
+features = [
+    'hours_studied',
+    'attendance',
+    'sleep_hours',
+    'previous_scores',
+    'internet_usage'
+]
 
+target = 'final_score'
+
+# -------------------------------
+# Check if columns exist
+# -------------------------------
+missing_cols = [col for col in features + [target] if col not in data.columns]
+
+if missing_cols:
+    st.error(f"❌ Missing columns in dataset: {missing_cols}")
+    st.stop()
+
+# -------------------------------
+# Split Data
+# -------------------------------
 X = data[features]
 y = data[target]
 
-# -------------------------------
-# Train-Test Split
-# -------------------------------
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
@@ -63,7 +98,7 @@ model.fit(X_train_scaled, y_train)
 y_pred = model.predict(X_test_scaled)
 
 # -------------------------------
-# Evaluation Metrics
+# Evaluation
 # -------------------------------
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
@@ -80,8 +115,14 @@ coefficients = pd.DataFrame({
     "Coefficient": model.coef_
 })
 
-st.subheader("📊 Feature Importance (Lasso Coefficients)")
+st.subheader("📊 Feature Importance (Lasso)")
 st.dataframe(coefficients)
+
+# Important features
+important = coefficients[coefficients["Coefficient"] != 0]
+
+st.subheader("✅ Important Factors Selected by Lasso")
+st.dataframe(important)
 
 # -------------------------------
 # Prediction Section
