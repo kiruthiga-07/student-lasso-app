@@ -16,7 +16,7 @@ st.title("📊 Student Performance Prediction using Lasso Regression")
 st.write("Predict final exam scores and identify key influencing factors.")
 
 # -------------------------------
-# Load Dataset (Auto Detect)
+# Load Dataset
 # -------------------------------
 @st.cache_data
 def load_data():
@@ -25,7 +25,6 @@ def load_data():
     except:
         data = pd.read_excel("student_data.xlsx")
 
-    # Clean column names (VERY IMPORTANT)
     data.columns = (
         data.columns
         .str.strip()
@@ -38,7 +37,7 @@ def load_data():
 data = load_data()
 
 # -------------------------------
-# Debug Columns (to avoid errors)
+# Show Columns
 # -------------------------------
 st.subheader("📌 Available Columns")
 st.write(data.columns.tolist())
@@ -50,25 +49,25 @@ st.subheader("🔍 Dataset Preview")
 st.dataframe(data.head())
 
 # -------------------------------
-# Feature Selection (lowercase)
+# Feature Mapping (UPDATED)
 # -------------------------------
 features = [
-    'hours_studied',
-    'attendance',
-    'sleep_hours',
-    'previous_scores',
-    'internet_usage'
+    'study_hours_per_day',
+    'attendance_percentage',
+    'previous_gpa',
+    'midterm_marks',
+    'assignment_score'
 ]
 
-target = 'final_score'
+target = 'final_result'
 
 # -------------------------------
-# Check if columns exist
+# Check columns
 # -------------------------------
 missing_cols = [col for col in features + [target] if col not in data.columns]
 
 if missing_cols:
-    st.error(f"❌ Missing columns in dataset: {missing_cols}")
+    st.error(f"❌ Missing columns: {missing_cols}")
     st.stop()
 
 # -------------------------------
@@ -94,7 +93,6 @@ X_test_scaled = scaler.transform(X_test)
 model = Lasso(alpha=0.5)
 model.fit(X_train_scaled, y_train)
 
-# Predictions
 y_pred = model.predict(X_test_scaled)
 
 # -------------------------------
@@ -104,7 +102,7 @@ mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
 
 st.subheader("📈 Model Evaluation")
-st.write(f"**Mean Squared Error (MSE):** {mse:.2f}")
+st.write(f"**MSE:** {mse:.2f}")
 st.write(f"**R² Score:** {r2:.2f}")
 
 # -------------------------------
@@ -115,29 +113,23 @@ coefficients = pd.DataFrame({
     "Coefficient": model.coef_
 })
 
-st.subheader("📊 Feature Importance (Lasso)")
+st.subheader("📊 Feature Importance")
 st.dataframe(coefficients)
 
-# Important features
-important = coefficients[coefficients["Coefficient"] != 0]
-
-st.subheader("✅ Important Factors Selected by Lasso")
-st.dataframe(important)
-
 # -------------------------------
-# Prediction Section
+# Prediction UI
 # -------------------------------
 st.subheader("🎯 Predict Student Score")
 
-hours = st.slider("Hours Studied", 0, 12, 5)
-attendance = st.slider("Attendance (%)", 0, 100, 75)
-sleep = st.slider("Sleep Hours", 0, 12, 7)
-previous = st.slider("Previous Scores", 0, 100, 60)
-internet = st.slider("Internet Usage (hrs/day)", 0, 12, 3)
+study = st.slider("Study Hours per Day", 0.0, 12.0, 5.0)
+attendance = st.slider("Attendance %", 0.0, 100.0, 75.0)
+gpa = st.slider("Previous GPA", 0.0, 10.0, 6.0)
+midterm = st.slider("Midterm Marks", 0.0, 100.0, 50.0)
+assignment = st.slider("Assignment Score", 0.0, 100.0, 60.0)
 
-input_data = np.array([[hours, attendance, sleep, previous, internet]])
+input_data = np.array([[study, attendance, gpa, midterm, assignment]])
 input_scaled = scaler.transform(input_data)
 
 prediction = model.predict(input_scaled)
 
-st.success(f"📌 Predicted Final Score: {prediction[0]:.2f}")
+st.success(f"📌 Predicted Final Result: {prediction[0]:.2f}")
