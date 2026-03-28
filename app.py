@@ -19,7 +19,7 @@ st.write("This app predicts final exam scores and identifies important factors a
 # -------------------------------
 @st.cache_data
 def load_data():
-    data = pd.read_csv("student_data.xlsx")
+    data = pd.read_excel("student_data.xlsx")
     return data
 
 data = load_data()
